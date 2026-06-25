@@ -5,6 +5,21 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.session import Base
 
+class Warehouse(Base):
+    __tablename__ = "warehouses"
+
+    id:         Mapped[int]      = mapped_column(Integer, primary_key=True, index=True)
+    name:       Mapped[str]      = mapped_column(String(100), nullable=False, unique=True)
+    city:       Mapped[str]      = mapped_column(String(100), nullable=False)
+    address:    Mapped[str|None] = mapped_column(Text, nullable=True)
+    capacity:   Mapped[int]      = mapped_column(Integer, nullable=False, default=10_000)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # back-reference: warehouse.items → all Inventory rows for this warehouse
+    items: Mapped[list["Inventory"]] = relationship("Inventory", back_populates="warehouse_rel", lazy="select")
+
+    def __repr__(self) -> str:
+        return f"<Warehouse id={self.id} name={self.name!r}>"
 
 class Inventory(Base):
     __tablename__ = "inventory"
@@ -19,6 +34,14 @@ class Inventory(Base):
     warehouse: Mapped[str] = mapped_column(String(160), index=True)
     daily_sales: Mapped[float] = mapped_column(Float)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    warehouse_id: Mapped[int|None] = mapped_column(
+        Integer,
+        ForeignKey("warehouses.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    warehouse_rel: Mapped["Warehouse|None"] = relationship("Warehouse", back_populates="items")
 
 
 class Forecast(Base):

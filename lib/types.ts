@@ -83,4 +83,40 @@ export interface DashboardData {
   anomalies: AnomalyItem[]
   revenue: RevenueResponse
   transportRisks: TransportRiskItem[]
+  warehouses?:        Warehouse[]
+  warehouseStats?:    WarehouseStats[]
+  transferRecs?:      TransferRecommendation[]
+}
+
+export interface Warehouse {
+  id:          number
+  name:        string
+  city:        string
+  address?:    string | null
+  capacity:    number
+  created_at?: string | null
+}
+
+export interface WarehouseStats {
+  warehouse_id:      number
+  warehouse_name:    string
+  total_items:       number
+  total_units:       number
+  inventory_value:   number
+  utilisation_pct:   number
+  capacity:          number
+  low_stock_count:   number
+  expiry_risk_count: number
+}
+
+export interface TransferRecommendation {
+  from_warehouse_id:   number
+  from_warehouse_name: string
+  to_warehouse_id:     number
+  to_warehouse_name:   string
+  product_id:          string
+  product_name:        string
+  recommended_units:   number
+  reason:              string
+  urgency:             "high" | "medium" | "low"
 }

@@ -100,3 +100,44 @@ class TransportRiskItem(BaseModel):
     location: str
     inventory_impact: str
     delay_minutes: int
+
+class WarehouseRead(BaseModel):
+    id:         int
+    name:       str
+    city:       str
+    address:    str | None = None
+    capacity:   int
+    created_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class WarehouseCreate(BaseModel):
+    name:     str = Field(min_length=1, max_length=100)
+    city:     str = Field(min_length=1, max_length=100)
+    address:  str | None = None
+    capacity: int = Field(default=10_000, gt=0)
+
+
+class WarehouseStats(BaseModel):
+    warehouse_id:      int
+    warehouse_name:    str
+    total_items:       int
+    total_units:       int
+    inventory_value:   float
+    utilisation_pct:   float
+    capacity:          int
+    low_stock_count:   int
+    expiry_risk_count: int
+
+
+class TransferRecommendation(BaseModel):
+    from_warehouse_id:   int
+    from_warehouse_name: str
+    to_warehouse_id:     int
+    to_warehouse_name:   str
+    product_id:          str
+    product_name:        str
+    recommended_units:   int
+    reason:              str
+    urgency:             Literal["high", "medium", "low"]
