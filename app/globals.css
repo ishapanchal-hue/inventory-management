@@ -1,0 +1,194 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Custom AI Inventory Management theme with dark green base */
+  --background: #416c43; /* Updated to requested green background */
+  --foreground: #f1f5f9; /* Off-white for headings and subheadings */
+  --card: #ffffff; /* White cards */
+  --card-foreground: #064e3b; /* Dark green text on cards */
+  --popover: #ffffff;
+  --popover-foreground: #064e3b;
+  --primary: #89a489; /* Dark green from palette */
+  --primary-foreground: #ffffff;
+  --secondary: #b0c3b0; /* Medium green from palette */
+  --secondary-foreground: #064e3b;
+  --muted: #e2e8f0; /* Muted off-white for body text */
+  --muted-foreground: #065f46; /* Deep green muted text */
+  --accent: #d8e1d8; /* Light green from palette */
+  --accent-foreground: #064e3b;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #d1d5db;
+  --input: #ffffff;
+  --ring: #89a489;
+  /* Updated chart colors to use consistent green palette */
+  --chart-1: #89a489; /* Dark green */
+  --chart-2: #b0c3b0; /* Medium green */
+  --chart-3: #d8e1d8; /* Light green */
+  --chart-4: #f5e6d3; /* Muted beige complementary */
+  --chart-5: #f4d1ae; /* Soft peach complementary */
+  --radius: 1rem; /* 2xl rounded corners */
+  --sidebar: #052e16; /* Darker green for sidebar */
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #89a489;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #065f46;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #065f46;
+  --sidebar-ring: #89a489;
+}
+
+.dark {
+  --background: #07130f;
+  --foreground: #ecfdf5;
+  --card: #0f1f19;
+  --card-foreground: #ecfdf5;
+  --popover: #0f1f19;
+  --popover-foreground: #ecfdf5;
+  --primary: #6ee7b7;
+  --primary-foreground: #052e16;
+  --secondary: #164e3b;
+  --secondary-foreground: #d1fae5;
+  --muted: #14352a;
+  --muted-foreground: #a7f3d0;
+  --accent: #14532d;
+  --accent-foreground: #ecfdf5;
+  --destructive: #f87171;
+  --destructive-foreground: #ffffff;
+  --border: #1f3d32;
+  --input: #10251e;
+  --ring: #6ee7b7;
+  --chart-1: #38bdf8;
+  --chart-2: #34d399;
+  --chart-3: #fbbf24;
+  --chart-4: #fb7185;
+  --chart-5: #a78bfa;
+  --sidebar: #04100c;
+  --sidebar-foreground: #ecfdf5;
+  --sidebar-primary: #6ee7b7;
+  --sidebar-primary-foreground: #052e16;
+  --sidebar-accent: #14532d;
+  --sidebar-accent-foreground: #ecfdf5;
+  --sidebar-border: #1f3d32;
+  --sidebar-ring: #6ee7b7;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Enhanced floating button animation with green shadows */
+  .floating-button {
+    transition: all 0.3s ease;
+    transform: translateY(0);
+  }
+
+  .floating-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(137, 164, 137, 0.3);
+  }
+
+  /* Enhanced floating card effects with green shadows */
+  .floating-card {
+    transition: all 0.3s ease;
+    transform: translateY(0);
+    box-shadow: 0 4px 12px rgba(137, 164, 137, 0.1);
+  }
+
+  .floating-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(137, 164, 137, 0.2);
+  }
+
+  /* Added floating icon animations */
+  .floating-icon {
+    transition: all 0.3s ease;
+    transform: translateY(0) scale(1);
+  }
+
+  .floating-icon:hover {
+    transform: translateY(-3px) scale(1.1);
+    filter: drop-shadow(0 8px 16px rgba(137, 164, 137, 0.3));
+  }
+
+  /* Added pulsing animation for food icons */
+  .food-icon-pulse {
+    animation: gentle-pulse 3s ease-in-out infinite;
+  }
+
+  @keyframes gentle-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.9;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 1;
+    }
+  }
+
+  /* Added floating widget animations */
+  .floating-widget {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(0) rotateX(0);
+  }
+
+  .floating-widget:hover {
+    transform: translateY(-8px) rotateX(2deg);
+    box-shadow: 0 25px 50px rgba(137, 164, 137, 0.25);
+  }
+
+  /* How It Works section background color */
+  .how-it-works-bg {
+    background-color: #e2e5a2;
+  }
+}

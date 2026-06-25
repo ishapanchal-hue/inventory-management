@@ -1,0 +1,56 @@
+from datetime import date, datetime
+
+from sqlalchemy import Date, DateTime, Float, Integer, String, func
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db.session import Base
+
+
+class Inventory(Base):
+    __tablename__ = "inventory"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    product_id: Mapped[str] = mapped_column(String(64), index=True)
+    product_name: Mapped[str] = mapped_column(String(255), index=True)
+    category: Mapped[str] = mapped_column(String(120), index=True)
+    quantity: Mapped[int] = mapped_column(Integer)
+    price: Mapped[float] = mapped_column(Float)
+    expiry_date: Mapped[date] = mapped_column(Date, index=True)
+    warehouse: Mapped[str] = mapped_column(String(160), index=True)
+    daily_sales: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Forecast(Base):
+    __tablename__ = "forecasts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    product_id: Mapped[str] = mapped_column(String(64), index=True)
+    forecast_date: Mapped[date] = mapped_column(Date, index=True)
+    predicted_demand: Mapped[float] = mapped_column(Float)
+    lower_bound: Mapped[float] = mapped_column(Float)
+    upper_bound: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Revenue(Base):
+    __tablename__ = "revenue"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    category: Mapped[str] = mapped_column(String(120), index=True)
+    revenue_date: Mapped[date] = mapped_column(Date, index=True)
+    actual_revenue: Mapped[float] = mapped_column(Float)
+    projected_revenue: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Alert(Base):
+    __tablename__ = "alerts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    product_id: Mapped[str] = mapped_column(String(64), index=True)
+    alert_type: Mapped[str] = mapped_column(String(80), index=True)
+    severity: Mapped[str] = mapped_column(String(20), index=True)
+    title: Mapped[str] = mapped_column(String(255))
+    description: Mapped[str] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

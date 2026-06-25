@@ -1,0 +1,9 @@
+product_id,product_name,category,quantity,price,expiry_date,warehouse,daily_sales
+DAI001,Milk,Dairy,120,60,2026-07-02,Central Warehouse,28
+DAI002,Yogurt,Dairy,80,45,2026-07-05,Central Warehouse,16
+FRT001,Bananas,Fruits,220,30,2026-06-28,North Warehouse,48
+FRT002,Apples,Fruits,140,90,2026-07-10,North Warehouse,22
+VEG001,Tomatoes,Vegetables,180,45,2026-06-29,South Warehouse,35
+VEG002,Lettuce,Vegetables,90,35,2026-06-27,South Warehouse,12
+GRN001,Rice,Grains,500,75,2026-12-31,Central Warehouse,18
+BEV001,Orange Juice,Beverages,70,110,2026-07-03,North Warehouse,9
