@@ -12,7 +12,7 @@ from sqlalchemy.sql import table, column
 from sqlalchemy import Integer, String
 
 revision      = "0002"
-down_revision = "REPLACE_WITH_CURRENT_REVISION"
+down_revision = "20260624_0001"
 branch_labels = None
 depends_on    = None
 

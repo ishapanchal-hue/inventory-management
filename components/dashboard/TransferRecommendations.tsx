@@ -10,13 +10,10 @@ interface Props {
   recommendations: TransferRecommendation[]
 }
 
-const urgencyVariant: Record
-  TransferRecommendation["urgency"],
-  "destructive" | "secondary" | "outline"
-> = {
-  high:   "destructive",
+const urgencyVariant: Record<TransferRecommendation["urgency"], "destructive" | "secondary" | "outline"> = {
+  high: "destructive",
   medium: "secondary",
-  low:    "outline",
+  low: "outline",
 }
 
 export function TransferRecommendations({ recommendations }: Props) {
@@ -69,9 +66,7 @@ export function TransferRecommendations({ recommendations }: Props) {
                 <span>{r.from_warehouse_name}</span>
                 <ArrowRight className="h-3.5 w-3.5 shrink-0" />
                 <span>{r.to_warehouse_name}</span>
-                <span className="ml-auto font-semibold text-foreground">
-                  {r.recommended_units} units
-                </span>
+                <span className="ml-auto font-semibold text-foreground">{r.recommended_units} units</span>
               </div>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{r.reason}</p>
             </li>

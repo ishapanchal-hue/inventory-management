@@ -85,7 +85,13 @@ export function DemandForecast({ inventory, forecast, onUploaded }: DemandForeca
         </CardHeader>
         <CardContent className="space-y-4">
           <Label htmlFor="csv-upload">CSV file</Label>
-          <Input id="csv-upload" type="file" accept=".csv" onChange={(event) => void handleFileChange(event.target.files?.[0])} />
+          <input
+            id="csv-upload"
+            type="file"
+            accept=".csv"
+            className="block w-full text-sm text-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
+            onChange={(event) => void handleFileChange(event.target.files?.[0])}
+          />
           {errors.length > 0 && (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
               {errors.slice(0, 8).map((error) => (
