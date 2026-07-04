@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Optional
 
 from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -77,3 +78,32 @@ class Alert(Base):
     title: Mapped[str] = mapped_column(String(255))
     description: Mapped[str] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+class User(Base):
+    """
+    Application user.
+    role:         "admin" | "warehouse_manager" | "analyst"
+    warehouse_id: only set for warehouse_manager — locks them to one warehouse
+    is_active:    soft-disable without deleting the account
+    """
+    __tablename__ = "users"
+
+    id:             Mapped[int]           = mapped_column(Integer, primary_key=True, index=True)
+    email:          Mapped[str]           = mapped_column(String(255), unique=True, index=True, nullable=False)
+    full_name:      Mapped[str]           = mapped_column(String(255), nullable=False)
+    hashed_password: Mapped[str]          = mapped_column(String(255), nullable=False)
+    role:           Mapped[str]           = mapped_column(String(30), nullable=False, default="analyst")
+    is_active:      Mapped[bool]          = mapped_column(Integer, nullable=False, default=True)
+    warehouse_id:   Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("warehouses.id", ondelete="SET NULL"), nullable=True, index=True,
+    )
+    created_at:     Mapped[datetime]      = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at:     Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+
+    # REPLACE with (no back_populates):
+    warehouse: Mapped[Optional["Warehouse"]] = relationship("Warehouse")
+
+    def __repr__(self) -> str:
+        return f"<User id={self.id} email={self.email!r} role={self.role!r}>"
+
+

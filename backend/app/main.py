@@ -10,7 +10,9 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.db.session import Base, engine, get_db
-from app.models import Inventory, Warehouse
+from app.dependencies import get_current_user, get_warehouse_scope, require_min_role, require_role
+from app.models import Inventory, User, Warehouse
+from app.routers.auth import router as auth_router
 from app.schemas import (
     AnomalyItem,
     ExpiryRiskItem,
@@ -29,15 +31,21 @@ from app.services.analytics import build_expiry_risk, build_forecast, build_reve
 
 settings = get_settings()
 
-app = FastAPI(title=settings.app_name, version="2.0.0")
+app = FastAPI(title=settings.app_name, version="3.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_origin, "http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register auth router
+app.include_router(auth_router)
 
 
 @app.on_event("startup")
@@ -45,22 +53,29 @@ def create_tables_for_local_dev() -> None:
     Base.metadata.create_all(bind=engine)
 
 
-# ── HEALTH ────────────────────────────────────────────────────────────────────
+# ── HEALTH (public) ───────────────────────────────────────────────────────────
 
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-# ── WAREHOUSE ROUTES ──────────────────────────────────────────────────────────
+# ── WAREHOUSE ROUTES (admin + analyst read, admin write) ──────────────────────
 
 @app.get("/warehouses", response_model=list[WarehouseRead])
-def list_warehouses(db: Session = Depends(get_db)) -> list[Warehouse]:
+def list_warehouses(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_min_role("analyst")),
+) -> list[Warehouse]:
     return db.query(Warehouse).order_by(Warehouse.name).all()
 
 
 @app.post("/warehouses", response_model=WarehouseRead, status_code=201)
-def create_warehouse(payload: WarehouseCreate, db: Session = Depends(get_db)) -> Warehouse:
+def create_warehouse(
+    payload: WarehouseCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_role("admin")),
+) -> Warehouse:
     wh = Warehouse(**payload.model_dump())
     db.add(wh)
     db.commit()
@@ -69,13 +84,30 @@ def create_warehouse(payload: WarehouseCreate, db: Session = Depends(get_db)) ->
 
 
 @app.get("/warehouses/stats", response_model=list[WarehouseStats])
-def all_warehouse_stats(db: Session = Depends(get_db)) -> list[WarehouseStats]:
+def all_warehouse_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_min_role("analyst")),
+) -> list[WarehouseStats]:
+    """
+    Admins and analysts see all warehouses.
+    Warehouse managers see only their own warehouse stats.
+    """
+    if current_user.role == "warehouse_manager" and current_user.warehouse_id:
+        wh = db.query(Warehouse).filter(Warehouse.id == current_user.warehouse_id).first()
+        return [_compute_stats(db, wh)] if wh else []
     warehouses = db.query(Warehouse).order_by(Warehouse.name).all()
     return [_compute_stats(db, wh) for wh in warehouses]
 
 
 @app.get("/warehouses/{warehouse_id}/stats", response_model=WarehouseStats)
-def single_warehouse_stats(warehouse_id: int, db: Session = Depends(get_db)) -> WarehouseStats:
+def single_warehouse_stats(
+    warehouse_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_min_role("analyst")),
+) -> WarehouseStats:
+    # Managers can only view their own warehouse stats
+    if current_user.role == "warehouse_manager" and current_user.warehouse_id != warehouse_id:
+        raise HTTPException(status_code=403, detail="Access denied to this warehouse.")
     wh = db.query(Warehouse).filter(Warehouse.id == warehouse_id).first()
     if not wh:
         raise HTTPException(status_code=404, detail="Warehouse not found")
@@ -83,65 +115,113 @@ def single_warehouse_stats(warehouse_id: int, db: Session = Depends(get_db)) -> 
 
 
 @app.get("/transfer-recommendations", response_model=list[TransferRecommendation])
-def transfer_recommendations(db: Session = Depends(get_db)) -> list[TransferRecommendation]:
+def transfer_recommendations(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_min_role("analyst")),
+) -> list[TransferRecommendation]:
     return _build_transfer_recommendations(db)
 
 
 # ── INVENTORY ─────────────────────────────────────────────────────────────────
 
 @app.post("/upload", response_model=UploadResponse)
-def upload_inventory(payload: UploadRequest, db: Session = Depends(get_db)) -> UploadResponse:
+def upload_inventory(
+    payload: UploadRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "warehouse_manager")),
+) -> UploadResponse:
+    """
+    Admins can upload for any warehouse.
+    Warehouse managers can only upload for their assigned warehouse —
+    any records not matching their warehouse are silently skipped.
+    """
     wh_lookup: dict[str, int] = {
         wh.name.lower(): wh.id
         for wh in db.query(Warehouse).all()
     }
+
     db.query(Inventory).delete()
     items = []
     for record in payload.records:
+        wh_id = wh_lookup.get(record.warehouse.strip().lower())
+
+        # Warehouse managers can only insert for their own warehouse
+        if current_user.role == "warehouse_manager":
+            if wh_id != current_user.warehouse_id:
+                continue
+
         data = record.model_dump()
-        data["warehouse_id"] = wh_lookup.get(record.warehouse.strip().lower())
+        data["warehouse_id"] = wh_id
         items.append(Inventory(**data))
+
     db.add_all(items)
     db.commit()
     count = db.query(func.count(Inventory.id)).scalar() or 0
-    return UploadResponse(inserted=len(payload.records), inventory_count=count)
+    return UploadResponse(inserted=len(items), inventory_count=count)
 
 
 @app.get("/inventory", response_model=list[InventoryRead])
 def inventory(
     warehouse_id: Optional[int] = Query(None, description="Filter by warehouse id"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_min_role("analyst")),
 ) -> list[Inventory]:
     q = db.query(Inventory).order_by(Inventory.product_name.asc())
-    if warehouse_id is not None:
+
+    # Managers are always scoped to their warehouse regardless of query param
+    if current_user.role == "warehouse_manager":
+        q = q.filter(Inventory.warehouse_id == current_user.warehouse_id)
+    elif warehouse_id is not None:
         q = q.filter(Inventory.warehouse_id == warehouse_id)
+
     return q.all()
 
 
-# ── ANALYTICS ─────────────────────────────────────────────────────────────────
+# ── ANALYTICS (all authenticated users) ──────────────────────────────────────
 
 @app.get("/forecast", response_model=list[ForecastPoint])
-def forecast(db: Session = Depends(get_db)) -> list[ForecastPoint]:
+def forecast(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_min_role("analyst")),
+) -> list[ForecastPoint]:
     return build_forecast(db)
 
 
 @app.get("/expiry-risk", response_model=list[ExpiryRiskItem])
-def expiry_risk(db: Session = Depends(get_db)) -> list[ExpiryRiskItem]:
+def expiry_risk(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_min_role("analyst")),
+) -> list[ExpiryRiskItem]:
     return build_expiry_risk(db)
 
 
 @app.get("/anomalies", response_model=list[AnomalyItem])
-def anomalies(db: Session = Depends(get_db)) -> list[AnomalyItem]:
+def anomalies(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_min_role("analyst")),
+) -> list[AnomalyItem]:
     return detect_anomalies(db)
 
 
 @app.get("/revenue", response_model=RevenueResponse)
-def revenue(db: Session = Depends(get_db)) -> RevenueResponse:
+def revenue(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_min_role("analyst")),
+) -> RevenueResponse:
+    # Warehouse managers don't have access to revenue analytics
+    if current_user.role == "warehouse_manager":
+        raise HTTPException(
+            status_code=403,
+            detail="Warehouse managers do not have access to revenue analytics.",
+        )
     return build_revenue(db)
 
 
 @app.get("/transport-risks", response_model=list[TransportRiskItem])
-def transport_risks(db: Session = Depends(get_db)) -> list[TransportRiskItem]:
+def transport_risks(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_min_role("analyst")),
+) -> list[TransportRiskItem]:
     rows = db.query(Inventory).all()
     warehouses = sorted({row.warehouse for row in rows}) or ["Central Warehouse"]
     high_risk = {row.warehouse for row in build_expiry_risk(db) if row.risk_level == "High"}
@@ -206,6 +286,9 @@ def _build_transfer_recommendations(db: Session) -> list[TransferRecommendation]
         for dest in items:
             for src in items:
                 if src.warehouse_id == dest.warehouse_id:
+                    continue
+                # Guard: skip if either warehouse_id is None (satisfies Pylance)
+                if src.warehouse_id is None or dest.warehouse_id is None:
                     continue
                 src_wh    = warehouses[src.warehouse_id]
                 dest_wh   = warehouses[dest.warehouse_id]

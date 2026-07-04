@@ -120,3 +120,38 @@ export interface TransferRecommendation {
   reason:              string
   urgency:             "high" | "medium" | "low"
 }
+
+export type Role = "admin" | "warehouse_manager" | "analyst"
+
+export interface User {
+  id:           number
+  email:        string
+  full_name:    string
+  role:         Role
+  is_active:    boolean
+  warehouse_id: number | null
+  created_at?:  string | null
+}
+
+export interface AuthState {
+  user:          User | null
+  isAuthenticated: boolean
+  isLoading:     boolean
+}
+
+export interface LoginRequest {
+  email:    string
+  password: string
+}
+
+export interface SignupRequest {
+  email:     string
+  password:  string
+  full_name: string
+}
+
+export interface TokenResponse {
+  access_token: string
+  token_type:   string
+  user:         User
+}

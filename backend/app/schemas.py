@@ -1,11 +1,12 @@
 from datetime import date, datetime
-from typing import Literal
+from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 RiskLevel = Literal["Low", "Medium", "High"]
 Severity = Literal["Low", "Medium", "High"]
+Role      = Literal["admin", "warehouse_manager", "analyst"]
 
 
 class InventoryCreate(BaseModel):
@@ -141,3 +142,45 @@ class TransferRecommendation(BaseModel):
     recommended_units:   int
     reason:              str
     urgency:             Literal["high", "medium", "low"]
+
+class LoginRequest(BaseModel):
+    email:    EmailStr
+    password: str = Field(min_length=1)
+
+
+class SignupRequest(BaseModel):
+    email:     EmailStr
+    password:  str  = Field(min_length=6, max_length=100)
+    full_name: str  = Field(min_length=1, max_length=255)
+
+    @field_validator("full_name")
+    @classmethod
+    def strip_name(cls, value: str) -> str:
+        return value.strip()
+
+
+class UserRead(BaseModel):
+    id:           int
+    email:        str
+    full_name:    str
+    role:         Role
+    is_active:    bool
+    warehouse_id: Optional[int]  = None
+    created_at:   Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserCreate(BaseModel):
+    """Admin-only: create a user with explicit role and optional warehouse assignment."""
+    email:        EmailStr
+    password:     str  = Field(min_length=6, max_length=100)
+    full_name:    str  = Field(min_length=1, max_length=255)
+    role:         Role = "analyst"
+    warehouse_id: Optional[int] = None
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type:   str = "bearer"
+    user:         UserRead

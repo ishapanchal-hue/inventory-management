@@ -1,44 +1,75 @@
+// app/login/page.tsx
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Brain, Mail, Lock, User, ArrowLeft } from "lucide-react"
+import { Brain, Mail, Lock, User, ArrowLeft, AlertCircle } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 
 export default function LoginPage() {
+  const { login, signup } = useAuth()
+
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [error,     setError]     = useState<string | null>(null)
+
+  // ── Login ────────────────────────────────────────────────────────────────
+  const [loginEmail,    setLoginEmail]    = useState("")
+  const [loginPassword, setLoginPassword] = useState("")
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate login process
-    setTimeout(() => {
+    setError(null)
+    try {
+      await login({ email: loginEmail, password: loginPassword })
+      // redirect handled inside useAuth → login()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed. Please try again.")
+    } finally {
       setIsLoading(false)
-      router.push("/dashboard")
-    }, 1500)
+    }
   }
+
+  // ── Signup ───────────────────────────────────────────────────────────────
+  const [signupName,     setSignupName]     = useState("")
+  const [signupEmail,    setSignupEmail]    = useState("")
+  const [signupPassword, setSignupPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
+
+    if (signupPassword !== confirmPassword) {
+      setError("Passwords do not match.")
+      return
+    }
+    if (signupPassword.length < 6) {
+      setError("Password must be at least 6 characters.")
+      return
+    }
+
     setIsLoading(true)
-    // Simulate signup process
-    setTimeout(() => {
+    try {
+      await signup({ email: signupEmail, password: signupPassword, full_name: signupName })
+      // redirect handled inside useAuth → signup()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign up failed. Please try again.")
+    } finally {
       setIsLoading(false)
-      router.push("/dashboard")
-    }, 1500)
+    }
   }
 
   return (
     <div className="min-h-screen bg-background food-pattern food-icons flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center space-x-2 text-foreground hover:text-primary mb-4">
@@ -47,7 +78,7 @@ export default function LoginPage() {
           </Link>
           <div className="flex items-center justify-center space-x-2 mb-4">
             <Brain className="h-8 w-8 text-chart-3" />
-            <span className="text-2xl font-bold text-foreground">{"LogiFlow"}</span>
+            <span className="text-2xl font-bold text-foreground">LogiFlow</span>
           </div>
           <p className="text-card">Access your intelligent inventory management system</p>
         </div>
@@ -59,13 +90,21 @@ export default function LoginPage() {
             <CardDescription>Sign in to your account or create a new one</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
+            {/* Error banner */}
+            {error && (
+              <div className="mb-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <Tabs defaultValue="login" className="w-full" onValueChange={() => setError(null)}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
               </TabsList>
 
-              {/* Login Tab */}
+              {/* ── Login Tab ─────────────────────────────────────────── */}
               <TabsContent value="login" className="space-y-4">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
@@ -79,6 +118,8 @@ export default function LoginPage() {
                         className="pl-10"
                         required
                         disabled={isLoading}
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
                       />
                     </div>
                   </div>
@@ -94,23 +135,29 @@ export default function LoginPage() {
                         className="pl-10"
                         required
                         disabled={isLoading}
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
                       />
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
+                  <Button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary/90"
+                    disabled={isLoading}
+                  >
                     {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
 
-                <div className="text-center">
-                  <Link href="#" className="text-sm text-primary hover:underline">
-                    Forgot your password?
-                  </Link>
+                {/* Demo credentials hint */}
+                <div className="rounded-md bg-muted/60 p-3 text-xs text-muted-foreground space-y-1">
+                  <p className="font-medium">Demo credentials:</p>
+                  <p>Admin: admin@logiflow.com / admin123</p>
                 </div>
               </TabsContent>
 
-              {/* Signup Tab */}
+              {/* ── Signup Tab ────────────────────────────────────────── */}
               <TabsContent value="signup" className="space-y-4">
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div className="space-y-2">
@@ -124,6 +171,8 @@ export default function LoginPage() {
                         className="pl-10"
                         required
                         disabled={isLoading}
+                        value={signupName}
+                        onChange={(e) => setSignupName(e.target.value)}
                       />
                     </div>
                   </div>
@@ -139,6 +188,8 @@ export default function LoginPage() {
                         className="pl-10"
                         required
                         disabled={isLoading}
+                        value={signupEmail}
+                        onChange={(e) => setSignupEmail(e.target.value)}
                       />
                     </div>
                   </div>
@@ -150,10 +201,12 @@ export default function LoginPage() {
                       <Input
                         id="signup-password"
                         type="password"
-                        placeholder="Create a password"
+                        placeholder="Create a password (min 6 chars)"
                         className="pl-10"
                         required
                         disabled={isLoading}
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
                       />
                     </div>
                   </div>
@@ -169,41 +222,30 @@ export default function LoginPage() {
                         className="pl-10"
                         required
                         disabled={isLoading}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
                       />
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
+                  <Button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary/90"
+                    disabled={isLoading}
+                  >
                     {isLoading ? "Creating account..." : "Create Account"}
                   </Button>
                 </form>
 
                 <div className="text-center text-xs text-muted-foreground">
-                  By signing up, you agree to our{" "}
-                  <Link href="#" className="text-primary hover:underline">
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="#" className="text-primary hover:underline">
-                    Privacy Policy
-                  </Link>
+                  New accounts are created with <strong>Analyst</strong> access.
+                  Contact your admin to request elevated permissions.
                 </div>
               </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
 
-        {/* Demo Access */}
-        <Card className="mt-6 border-border/20 bg-primary">
-          <CardContent className="p-4 text-center">
-            <p className="text-sm mb-3 text-sidebar">Want to try without signing up?</p>
-            <Link href="/dashboard">
-              <Button variant="outline" className="w-full bg-sidebar text-card">
-                Access Demo Dashboard
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

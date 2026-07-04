@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
+import { AuthProvider } from "@/lib/auth-context"
 import "./globals.css"
 
 const inter = Inter({
@@ -24,12 +25,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  return (
+ return (
     <html lang="en">
       <body className={`font-sans ${inter.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
-          <Toaster richColors />
+          <AuthProvider>                                  {/* ← new */}
+            <Suspense fallback={<div>Loading...</div>}>
+              {children}
+            </Suspense>
+            <Toaster richColors />
+          </AuthProvider>                                 {/* ← new */}
         </ThemeProvider>
         <Analytics />
       </body>
