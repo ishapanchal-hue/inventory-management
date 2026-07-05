@@ -12,7 +12,7 @@ class Warehouse(Base):
     id:         Mapped[int]      = mapped_column(Integer, primary_key=True, index=True)
     name:       Mapped[str]      = mapped_column(String(100), nullable=False, unique=True)
     city:       Mapped[str]      = mapped_column(String(100), nullable=False)
-    address:    Mapped[str|None] = mapped_column(Text, nullable=True)
+    address:    Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     capacity:   Mapped[int]      = mapped_column(Integer, nullable=False, default=10_000)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -36,13 +36,13 @@ class Inventory(Base):
     daily_sales: Mapped[float] = mapped_column(Float)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    warehouse_id: Mapped[int|None] = mapped_column(
+    warehouse_id:  Mapped[Optional[int]] = mapped_column(
         Integer,
         ForeignKey("warehouses.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
-    warehouse_rel: Mapped["Warehouse|None"] = relationship("Warehouse", back_populates="items")
+    warehouse_rel: Mapped[Optional["Warehouse"]] = relationship("Warehouse", back_populates="items")
 
 
 class Forecast(Base):
@@ -100,8 +100,7 @@ class User(Base):
     created_at:     Mapped[datetime]      = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at:     Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), onupdate=func.now())
 
-    # REPLACE with (no back_populates):
-    warehouse: Mapped[Optional["Warehouse"]] = relationship("Warehouse")
+    warehouse:      Mapped[Optional["Warehouse"]] = relationship("Warehouse")
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email!r} role={self.role!r}>"
