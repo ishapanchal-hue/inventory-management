@@ -90,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await apiPost<TokenResponse>("/auth/login", credentials)
     memoryToken = res.access_token
     localStorage.setItem("logiflow_token", res.access_token)
+    document.cookie = "logiflow_session=1; path=/; max-age=28800; SameSite=Lax"
     setUser(res.user)
     router.push("/dashboard")
   }, [router])
@@ -98,22 +99,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await apiPost<TokenResponse>("/auth/signup", data)
     memoryToken = res.access_token
     localStorage.setItem("logiflow_token", res.access_token)
+    document.cookie = "logiflow_session=1; path=/; max-age=28800; SameSite=Lax"
     setUser(res.user)
     router.push("/dashboard")
   }, [router])
 
-  const logout = useCallback(async () => {
-    try {
-      if (memoryToken) {
-        await apiPost("/auth/logout", {}, memoryToken)
-      }
-    } finally {
-      memoryToken = null
-      localStorage.removeItem("logiflow_token")
-      setUser(null)
-      router.push("/login")
+const logout = useCallback(async () => {
+  try {
+    if (memoryToken) {
+      await apiPost("/auth/logout", {}, memoryToken)
     }
-  }, [router])
+  } finally {
+    memoryToken = null
+    localStorage.removeItem("logiflow_token")
+    document.cookie = "logiflow_session=; path=/; max-age=0"
+    setUser(null)
+    router.push("/login")
+  }
+}, [router])
 
   return (
     <AuthContext.Provider value={{

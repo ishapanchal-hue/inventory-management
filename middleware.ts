@@ -1,4 +1,4 @@
-// middleware.ts  (project root — same level as package.json)
+// middleware.ts — replace entire file
 
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
@@ -9,21 +9,24 @@ const AUTH_ROUTES      = ["/login"]
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Read the httpOnly auth cookie
-  const token = request.cookies.get("access_token")?.value
+  // Check both cookie (local dev) and a custom header token flag
+  const cookieToken = request.cookies.get("access_token")?.value
+  // For localStorage-based auth, we use a lightweight session cookie
+  // set by the frontend just for middleware routing purposes
+  const sessionFlag = request.cookies.get("logiflow_session")?.value
+
+  const hasAuth = !!(cookieToken || sessionFlag)
 
   const isProtected = PROTECTED_ROUTES.some((route) => pathname.startsWith(route))
   const isAuthRoute  = AUTH_ROUTES.some((route) => pathname.startsWith(route))
 
-  // No token + trying to access protected route → send to login
-  if (isProtected && !token) {
+  if (isProtected && !hasAuth) {
     const loginUrl = new URL("/login", request.url)
-    loginUrl.searchParams.set("from", pathname)   // preserve intended destination
+    loginUrl.searchParams.set("from", pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  // Has token + trying to access login → send to dashboard
-  if (isAuthRoute && token) {
+  if (isAuthRoute && hasAuth) {
     return NextResponse.redirect(new URL("/dashboard", request.url))
   }
 
@@ -31,12 +34,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  /*
-   * Match all routes EXCEPT:
-   * - _next/static  (static files)
-   * - _next/image   (image optimization)
-   * - favicon.ico
-   * - api routes
-   */
   matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
 }
