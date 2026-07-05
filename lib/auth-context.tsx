@@ -16,7 +16,7 @@ import type { AuthState, LoginRequest, SignupRequest, TokenResponse, User } from
 // ── API calls (inline here to avoid circular imports with lib/api.ts) ─────────
 
 // REPLACE the top of auth-context.tsx:
-const API_BASE = "http://localhost:8000"  // hardcode for local dev — no process.env
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"  // hardcode for local dev — no process.env
 
 async function apiPost<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
