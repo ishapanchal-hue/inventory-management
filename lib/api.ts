@@ -19,12 +19,18 @@ import type {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
 
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  // Get token from localStorage for cross-domain auth
+  const token = typeof window !== "undefined"
+    ? localStorage.getItem("logiflow_token")
+    : null
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-    credentials: "include",   // ← sends httpOnly cookie on every request
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   })

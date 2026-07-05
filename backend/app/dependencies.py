@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Cookie, Depends, Header, HTTPException, status
 from jose import JWTError
 from sqlalchemy.orm import Session
 
@@ -25,12 +25,14 @@ def _role_rank(role: str) -> int:
 # ── Core auth dependency ──────────────────────────────────────────────────────
 
 async def get_current_user(
+    authorization: Optional[str] = Header(default=None),
     access_token: Optional[str] = Cookie(default=None),
     db: Session = Depends(get_db),
 ) -> User:
     """
-    Reads JWT from the httpOnly cookie named 'access_token'.
-    Raises 401 if missing, invalid, expired, or user not found/inactive.
+    Accepts JWT from either:
+    - Authorization: Bearer <token> header (production cross-domain)
+    - access_token httpOnly cookie (local development)
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -38,11 +40,19 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    if not access_token:
+    # Try Authorization header first (production)
+    token = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ", 1)[1]
+    # Fall back to cookie (local dev)
+    elif access_token:
+        token = access_token
+
+    if not token:
         raise credentials_exception
 
     try:
-        payload  = decode_access_token(access_token)
+        payload = decode_access_token(token)
         email: Optional[str] = payload.get("sub")
         if not email:
             raise credentials_exception
@@ -54,7 +64,6 @@ async def get_current_user(
         raise credentials_exception
 
     return user
-
 
 # ── Role enforcement factory ──────────────────────────────────────────────────
 
